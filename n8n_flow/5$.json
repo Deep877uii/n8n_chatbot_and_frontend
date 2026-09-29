@@ -1,0 +1,875 @@
+{
+  "name": "5$",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const q = ($json.searchQuery || $json.query || '').toString().trim();\nconst lc = q.toLowerCase();\nconst countries = ['India','United States','USA','UK','United Kingdom','Canada','Germany','Australia','Singapore'];\nlet country = '';\nconst explicitCountry = ($json.country || $json.location || '').toString().trim();\nif (explicitCountry) {\n  const ec = explicitCountry.toLowerCase();\n  if (ec === 'usa') { country = 'United States'; }\n  else if (ec === 'uk') { country = 'United Kingdom'; }\n  else { country = explicitCountry; }\n}\nif (!country) {\n  for (const c of countries) {\n    if (lc.includes(c.toLowerCase())) {\n      country = c === 'USA' ? 'United States' : c === 'UK' ? 'United Kingdom' : c;\n      break;\n    }\n  }\n}\nconst cities = ['Hyderabad','Bengaluru','Bangalore','Mumbai','New Delhi','Delhi','Pune','Chennai','Gurgaon','Gurugram','Noida','Kolkata','Jaipur','Lucknow','Ahmedabad','Indore','London','New York','San Francisco','Berlin','Toronto','Sydney','Singapore'];\nlet city = '';\nfor (const c of cities) { if (lc.includes(c.toLowerCase())) { city = c; break; } }\nconst location = city || country || '';\nconst businessModels = [\n  { key: 'C2C', patterns: ['c2c','corp to corp','corp-to-corp','corporation to corporation','corporate to corporate'] },\n  { key: 'B2B', patterns: ['b2b','business to business','business-to-business'] },\n  { key: 'B2C', patterns: ['b2c','business to consumer','business-to-consumer'] },\n  { key: 'C2B', patterns: ['c2b','consumer to business','consumer-to-business'] }\n];\nconst detectedBusinessModels = [];\nfor (const model of businessModels) {\n  const found = model.patterns.some(pattern => lc.includes(pattern));\n  if (found) { detectedBusinessModels.push(model.key); }\n}\nlet title = q;\nfor (const model of businessModels) {\n  for (const pattern of model.patterns) {\n    title = title.replace(new RegExp('\\\\b' + pattern.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '\\\\b', 'ig'), ' ');\n  }\n}\ntitle = title.replace(/\\b\\d+\\s*(?:-|to)\\s*\\d+\\s*years?\\b/ig, ' ');\ntitle = title.replace(/\\b\\d+\\+?\\s*years?\\b/ig, ' ');\ntitle = title.replace(/\\bremote\\b/ig, ' ');\ntitle = title.replace(/\\bhybrid\\b/ig, ' ');\ntitle = title.replace(/\\bon[- ]?site\\b/ig, ' ');\ntitle = title.replace(/\\bonsite\\b/ig, ' ');\nif (city) { title = title.replace(new RegExp(city.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'), 'ig'), ' '); }\nif (country) { title = title.replace(new RegExp(country.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'), 'ig'), ' '); }\ntitle = title.replace(/[,-]+/g, ' ').replace(/\\s{2,}/g, ' ').trim();\nconst technologies = ['react native','python','java','javascript','typescript','c++','c#','.net','dotnet','golang','go','rust','php','ruby','kotlin','swift','react','reactjs','angular','vue','nextjs','next.js','node','nodejs','express','appian','salesforce','servicenow','sap','oracle','aws','azure','gcp','docker','kubernetes','flutter','android','ios','tensorflow','pytorch','langchain','langgraph','power bi','tableau','spark','hadoop'];\nconst detectedTechnologies = [];\nfor (const tech of technologies) { if (lc.includes(tech.toLowerCase())) { detectedTechnologies.push(tech); } }\nconst keywords = [];\nconst pushKeyword = (value) => {\n  if (!value) return;\n  const cleaned = String(value).replace(/\\s+/g, ' ').trim();\n  if (!cleaned) return;\n  const exists = keywords.some(x => x.toLowerCase() === cleaned.toLowerCase());\n  if (!exists) { keywords.push(cleaned); }\n};\npushKeyword(title);\nconst technology = detectedTechnologies.length ? detectedTechnologies[0] : '';\nconst titleLc = title.toLowerCase();\nif (technology === 'python') {\n  if (titleLc.includes('backend')) { pushKeyword('Python Backend Developer'); pushKeyword('Python Backend Engineer'); }\n  else { pushKeyword('Python Developer'); pushKeyword('Python Backend Developer'); pushKeyword('Python Software Engineer'); }\n}\nelse if (technology === 'appian') { pushKeyword('Appian Developer'); pushKeyword('Appian BPM Developer'); pushKeyword('Appian Engineer'); }\nelse if (technology === 'java') { pushKeyword('Java Developer'); pushKeyword('Java Backend Developer'); pushKeyword('Java Software Engineer'); }\nelse if (technology === 'javascript' || technology === 'typescript') { pushKeyword(technology + ' Developer'); pushKeyword(technology + ' Software Engineer'); }\nelse if (technology === '.net' || technology === 'dotnet') { pushKeyword('.NET Developer'); pushKeyword('.NET Backend Developer'); pushKeyword('.NET Software Engineer'); }\nelse if (technology === 'react native') { pushKeyword('React Native Developer'); pushKeyword('React Native Engineer'); pushKeyword('React Native Mobile Developer'); }\nelse if (technology === 'react' || technology === 'reactjs') { pushKeyword('React Developer'); pushKeyword('React Frontend Developer'); }\nelse if (technology === 'angular') { pushKeyword('Angular Developer'); pushKeyword('Angular Frontend Developer'); }\nelse if (technology === 'salesforce') { pushKeyword('Salesforce Developer'); pushKeyword('Salesforce Engineer'); }\nelse if (technology === 'servicenow') { pushKeyword('ServiceNow Developer'); pushKeyword('ServiceNow Engineer'); }\nelse { const words = title.split(/\\s+/).filter(Boolean); if (words.length >= 2) { pushKeyword(words.slice(0, 2).join(' ')); } }\nconst genericOnly = ['developer','engineer','software engineer','software developer','backend engineer','backend developer','frontend engineer','frontend developer','programmer','sde'];\nconst filteredKeywords = keywords.filter(k => { const kl = k.toLowerCase().trim(); if (technology) { if (genericOnly.includes(kl)) { return false; } } return true; });\nconst buildQuery = (keyword) => {\n  let query = keyword;\n  if (detectedBusinessModels.length > 0) { query += ' ' + detectedBusinessModels.join(' '); }\n  query += ' hiring';\n  if (location) { query += ' ' + location; }\n  return query.replace(/\\s{2,}/g, ' ').trim();\n};\nlet postSearchQueries = filteredKeywords.slice(0, 5).map(buildQuery);\nif (postSearchQueries.length === 0) { postSearchQueries = [buildQuery(title)]; }\nconst searchQuery = buildQuery(title);\nconst naukari = title.replace(/\\s{2,}/g, ' ').trim();\nconst dp = ($json.datePosted || '').toString().toLowerCase().trim();\n\nlet datePosted = 'any time';\n\nif (\n  dp.includes('past-24h') ||\n  dp.includes('past 24 hours') ||\n  dp.includes('past 24 hour') ||\n  dp.includes('last 24 hours') ||\n  dp.includes('last 24 hour') ||\n  dp === '24h'\n) {\n  datePosted = 'past-24h';\n}\nelse if (\n  dp.includes('past-hour') ||\n  dp.includes('past hour') ||\n  dp.includes('last hour') ||\n  dp === '1h'\n) {\n  datePosted = 'past-hour';\n}\nelse if (\n  dp.includes('past-week') ||\n  dp.includes('past week') ||\n  dp.includes('last week') ||\n  dp === '7d'\n) {\n  datePosted = 'past-week';\n}\nelse if (\n  dp.includes('past-month') ||\n  dp.includes('past month') ||\n  dp.includes('last month') ||\n  dp === '30d'\n) {\n  datePosted = 'past-month';\n}\nreturn [{ json: { rawQuery: q, jobTitle: title, searchQuery, postSearchQueries, keywords: filteredKeywords, naukari, location, country, detectedTechnologies, detectedBusinessModels, datePosted, specializationLocked: detectedTechnologies.length > 0, businessModelLocked: detectedBusinessModels.length > 0 } }];"
+      },
+      "id": "ff0b2501-3328-4fda-83a5-ae09ed760c1f",
+      "name": "Generate Post Search Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2960,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "https://console.apify.com/actors/5QnEH5N71IK2mFLrP/input",
+          "mode": "url"
+        },
+        "customBody": "={{\n{\n  \"date_filter\": $json.datePosted || \"past-24h\",\n  \"keyword\": $json.rawQuery,\n  \"limit\": 10,\n  \"page_number\": 1,\n  \"sort_type\": \"date_posted\"\n}\n}}",
+        "authentication": "apifyOAuth2Api"
+      },
+      "id": "9815de1f-bbfb-4778-be5f-89102640082d",
+      "name": "new actor scraper 5$",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        -2720,
+        688
+      ],
+      "credentials": {
+        "apifyOAuth2Api": {
+          "id": "t8nAVefRFLgZQ33l",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const gen = $('Generate Post Search Query').first().json;\nconst rawQuery = gen.rawQuery || '';\nconst requestedJobTitle = gen.jobTitle || '';\nconst location = gen.location || '';\nconst lc = (s) => s == null ? '' : String(s).toLowerCase();\nconst cleanUrl = (u) => { if (!u) return ''; return String(u).replace(/^\\[|\\]$/g, '').replace(/\\\\_/g, '_').replace(/\\\\&/g, '&').trim(); };\nconst cleanText = (s) => { if (!s) return ''; return String(s).replace(/\\r/g, '').replace(/\\n+/g, '\\n').trim(); };\nconst posts = $input.all().map(i => i.json).filter(p => p && typeof p === 'object' && Object.keys(p).length > 0);\nconst output = [];\nconst hiringWords = ['hiring','we are hiring',\"we're hiring\",'now hiring','looking for','join our team','open position','open role','job opening','vacancy','recruiting','recruit','recruiter','recruiters','apply','referral','referrals','career opportunity','job opportunity','hiring alert','job alert','immediate opening','opportunity'];\nconst businessModelWords = ['c2c','corp2corp','corp to corp','corp-to-corp','contract','contractor','contract jobs','contract role','contract roles','consultant','consultants','consulting','hotlist','bench','bench sales','available consultant','available consultants','resources available','it resources','vendor','vendors','distribution list','distribution','client'];\nconst rawQueryWords = lc(rawQuery).split(/[^a-z0-9+#.-]+/).filter(word => word.length > 2);\nconst ignoredWords = new Set(['the','and','for','with','from','job','jobs','need','needed','hiring','opening','open','role']);\nconst queryKeywords = rawQueryWords.filter(word => !ignoredWords.has(word));\nfor (const p of posts) {\n  const postUrl = cleanUrl(p.post_url || p.postUrl || p.url || '');\n  const postContent = cleanText(p.text || p.content || p.postText || '');\n  const author = p.author || {};\n  const authorName = cleanText(author.name || p.authorName || '');\n  const authorProfileUrl = cleanUrl(author.profile_url || p.authorProfileUrl || p.profileUrl || '');\n  const postedAt = author.posted_at || {};\n  const postPublishedAt = postedAt.date || postedAt.display_text || p.postedAt || p.date || '';\n  const postTimestamp = postedAt.timestamp || '';\n  const authorHeadline = cleanText(author.headline || '');\n  const authorProfileId = author.profile_id || '';\n  const contentLc = lc(postContent);\n  const matchedQueryKeywords = queryKeywords.filter(keyword => contentLc.includes(keyword));\n  const matchedHiringWords = hiringWords.filter(word => contentLc.includes(lc(word)));\n  const hasHiringSignal = matchedHiringWords.length > 0;\n  const matchedBusinessModelWords = businessModelWords.filter(word => contentLc.includes(lc(word)));\n  const hasBusinessModelSignal = matchedBusinessModelWords.length > 0;\n  const titleWords = lc(requestedJobTitle).split(/[^a-z0-9+#.-]+/).filter(word => word.length > 2);\n  const matchedTitleWords = titleWords.filter(word => contentLc.includes(word));\n  const hasJobTitleMatch = matchedTitleWords.length > 0;\n  const locationLc = lc(location);\n  const locationMatch = !!locationLc && contentLc.includes(locationLc);\n  let score = 0;\n  const signals = [];\n  if (hasHiringSignal) { score += 2; signals.push('hiring_language'); }\n  if (hasBusinessModelSignal) { score += 2; signals.push('business_model_language'); }\n  if (matchedQueryKeywords.length > 0) { score += Math.min(matchedQueryKeywords.length, 4); signals.push('raw_query_match'); }\n  if (hasJobTitleMatch) { score += 2; signals.push('job_title_match'); }\n  if (locationMatch) { score += 1; signals.push('location_match'); }\n  const queryHasC2C = lc(rawQuery).includes('c2c') || lc(rawQuery).includes('corp2corp') || lc(rawQuery).includes('corp to corp');\n  const relevantForC2C = queryHasC2C && hasBusinessModelSignal && (matchedQueryKeywords.length > 0 || hasJobTitleMatch);\n  const relevantNormal = !queryHasC2C && hasHiringSignal && (matchedQueryKeywords.length > 0 || hasJobTitleMatch);\n  const relevant = relevantForC2C || relevantNormal;\n  if (!relevant) { continue; }\n  const profileLc = lc(authorProfileUrl);\n  let postAuthorType = 'unknown';\n  if (profileLc.includes('/in/') || profileLc.includes('/pub/')) { postAuthorType = 'individual'; }\n  else if (profileLc.includes('/company/')) { postAuthorType = 'company'; }\n  else if (authorName) { postAuthorType = 'individual'; }\n  let posterProfileStatus = 'not_found';\n  if (authorProfileUrl && (profileLc.includes('/in/') || profileLc.includes('/pub/'))) { posterProfileStatus = 'confirmed'; }\n  else if (authorName) { posterProfileStatus = 'candidate'; }\n  const postValid = !!postUrl && !!postContent && !!authorName;\n  output.push({ json: {\n    source: 'linkedin',\n    rawQuery,\n    jobTitle: requestedJobTitle || rawQuery,\n    location,\n    postUrl,\n    postContent,\n    postPublishedAt,\n    postTimestamp,\n    postAuthorName: authorName,\n    postAuthorProfileUrl: authorProfileUrl,\n    postAuthorHeadline: authorHeadline,\n    postAuthorProfileId: authorProfileId,\n    postAuthorType,\n    posterProfileStatus,\n    posterValid: posterProfileStatus === 'confirmed',\n    matchScore: score,\n    matchSignals: signals,\n    keywordsMatched: matchedQueryKeywords,\n    hiringSignalsMatched: matchedHiringWords,\n    businessModelSignalsMatched: matchedBusinessModelWords,\n    postValid,\n    research_status: 'pending_agent_reach'\n  } });\n}\nreturn output;"
+      },
+      "id": "54fcc185-6a2e-446d-b8f7-3c9a8ab586f4",
+      "name": "Filter Relevant Hiring 5$",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2384,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const seen = new Set();\nconst out = [];\nfor (const it of $input.all()) {\n  const j = it.json || {};\n  const posterUrl = j.poster_linkedin_url || (j.poster && j.poster.linkedinUrl) || '';\n  const postUrl = j.post_url || (j.post && j.post.url) || '';\n  const key = posterUrl || postUrl;\n  if (!key) { out.push(it); continue; }\n  if (seen.has(key)) continue;\n  seen.add(key);\n  out.push(it);\n}\nreturn out;"
+      },
+      "id": "ac2588cf-fea2-43b1-b79a-54287ad50620",
+      "name": "Deduplicate Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2224,
+        384
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "75284ff5-2865-42cd-92ef-de5455cc356f",
+      "name": "Final Leads",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -2032,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const it of $input.all()) {\n  const j = it.json || {};\n  const post = j.post || {};\n  const poster = j.poster || {};\n  const company = j.company || {};\n  const contact = j.contact || {};\n  const research = j.research || {};\n  const joinArr = (a) => Array.isArray(a) ? a.join(', ') : (a || '');\n  out.push({ json: {\n    'Job Title': j.rawQuery || '',\n    'Company': company.name || '',\n    'Company URL': company.linkedinUrl || '',\n    'Job URL': '',\n    'Job Location': '',\n    'Job Description': '',\n    'Post URL': post.url || j.post_url || '',\n    'Posted At': post.publishedAt || '',\n    'Poster Name': poster.name || j.poster_name || '',\n    'Poster LinkedIn URL': poster.linkedinUrl || j.poster_linkedin_url || '',\n    'Poster Profile Status': poster.profileStatus || '',\n    'Post Content': post.content || '',\n    'Person Role': research.role || '',\n    'Emails': joinArr(contact.emails),\n    'Phone Numbers': joinArr(contact.phoneNumbers),\n    'Confidence': research.confidence != null ? research.confidence : 0,\n    'Research Status': research.status || j.research_status || '',\n    'Backend Used': research.backend || '',\n    'Scraped At': new Date().toISOString()\n  } });\n}\nreturn out;"
+      },
+      "id": "a787ccf4-e3b4-4eef-922a-6f424c25cedc",
+      "name": "Prepare Sheet Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1824,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json['Post Content'] }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "companyName",
+              "description": "Name of the company that is hiring, as stated in the post. Empty string if not mentioned."
+            },
+            {
+              "name": "jobTitle",
+              "description": "The specific job title / role being hired for in the post. Empty string if not mentioned."
+            },
+            {
+              "name": "jobLocation",
+              "description": "Work location for the job (city, country, or Remote / Hybrid). Empty string if not mentioned."
+            },
+            {
+              "name": "jobDescription",
+              "description": "A concise summary of the role, key responsibilities and requirements mentioned in the post."
+            },
+            {
+              "name": "jobUrl",
+              "description": "Any application or job posting URL mentioned in the post. Empty string if none."
+            },
+            {
+              "name": "personRole",
+              "description": "The role/designation of the person who wrote the post (e.g. Recruiter, Hiring Manager, CTO). Empty string if not mentioned."
+            },
+            {
+              "name": "emails",
+              "description": "Comma-separated list of contact email addresses mentioned in the post. Empty string if none."
+            },
+            {
+              "name": "phoneNumbers",
+              "description": "Comma-separated list of contact phone numbers mentioned in the post. Empty string if none."
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert recruitment data extractor. Extract structured hiring information strictly from the given LinkedIn post text. Only use information present in the text. If a field is not mentioned, return an empty string. Never invent companies, locations, emails, phone numbers or URLs."
+        }
+      },
+      "id": "34598287-f097-4abe-b69e-2d2c4639a0cd",
+      "name": "Extract Fields From Post",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -1616,
+        32
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3-super-120b-a12b:free",
+        "options": {}
+      },
+      "id": "f19d67dc-e515-4af7-988e-c5b4f8c05c70",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1568,
+        256
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "XgkkgRUxVjF1xZyl",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const row = { ...($('Prepare Sheet Rows').all()[i] ? $('Prepare Sheet Rows').all()[i].json : {}) };\n  const raw = items[i].json || {};\n  const ext = raw.output || raw;\n  const pick = (v) => (v == null ? '' : String(v).trim());\n  const company = pick(ext.companyName);\n  const jobTitle = pick(ext.jobTitle);\n  const jobLocation = pick(ext.jobLocation);\n  const jobDescription = pick(ext.jobDescription);\n  const jobUrl = pick(ext.jobUrl);\n  const personRole = pick(ext.personRole);\n  const emails = pick(ext.emails);\n  const phones = pick(ext.phoneNumbers);\n  if (company) row['Company'] = company;\n  if (jobTitle) row['Job Title'] = jobTitle;\n  if (jobLocation) row['Job Location'] = jobLocation;\n  if (jobDescription) row['Job Description'] = jobDescription;\n  if (jobUrl) row['Job URL'] = jobUrl;\n  if (personRole) row['Person Role'] = personRole;\n  if (emails && !row['Emails']) row['Emails'] = emails;\n  if (phones && !row['Phone Numbers']) row['Phone Numbers'] = phones;\n  out.push({ json: row });\n}\nreturn out;"
+      },
+      "id": "1dc493cf-e4ae-4e30-85fd-ac726ff3ebc8",
+      "name": "Merge Extracted Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1280,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1hetnFGr9qj_yl8OxIYhVLrSZsoPh9B4S7TBpoT1eeUw",
+          "mode": "list",
+          "cachedResultName": "jobs lead",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hetnFGr9qj_yl8OxIYhVLrSZsoPh9B4S7TBpoT1eeUw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet2",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Job Title": "={{ $json[\"Job Title\"] }}",
+            "Company": "={{ $json.Company }}",
+            "Company URL": "={{ $json[\"Company URL\"] }}",
+            "Job URL": "={{ $json[\"Job URL\"] }}",
+            "Job Location": "={{ $json[\"Job Location\"] }}",
+            "Job Description": "={{ $json[\"Job Description\"] }}",
+            "Post URL": "={{ $json[\"Post URL\"] }}",
+            "Poster Name": "={{ $json[\"Poster Name\"] }}",
+            "Poster Profile URL": "={{ $json[\"Poster LinkedIn URL\"] }}",
+            "Post Content": "={{ $json[\"Post Content\"] }}",
+            "Poster Title": "={{ $json[\"Person Role\"] }}",
+            "Date Added": "={{ $json[\"Posted At\"] }}",
+            "email": "={{ $json.Emails }}"
+          },
+          "matchingColumns": [
+            "Post URL"
+          ],
+          "schema": [
+            {
+              "id": "Job Title",
+              "displayName": "Job Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company URL",
+              "displayName": "Company URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job URL",
+              "displayName": "Job URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Location",
+              "displayName": "Job Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Description",
+              "displayName": "Job Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Post URL",
+              "displayName": "Post URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Poster Name",
+              "displayName": "Poster Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Poster Title",
+              "displayName": "Poster Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Poster Profile URL",
+              "displayName": "Poster Profile URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date Added",
+              "displayName": "Date Added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Post Content",
+              "displayName": "Post Content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b3dce82b-4753-4936-8cb3-cbadffb74978",
+      "name": "Save Leads to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -800,
+        496
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1c7MJCNUpHCqcvsy",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Lead scraping completed successfully.', leadsProcessed: $items().length }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "58931b37-4093-4686-a621-7c37efcd4dc4",
+      "name": "Respond Scraper (Direct)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "poster-valid",
+              "leftValue": "={{ $json.posterValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e5150b97-251c-4471-a5a0-31a725706376",
+      "name": "Is Poster Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1680,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agent-reach-n8n.onrender.com/research-person",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $json.postAuthorName }}"
+            },
+            {
+              "name": "company",
+              "value": "={{ $json.companyName }}"
+            },
+            {
+              "name": "job_title",
+              "value": "={{ $json.rawQuery }}"
+            },
+            {
+              "name": "linkedin_url",
+              "value": "={{ $json.postAuthorProfileUrl }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "c9fb213e-c821-4b27-8973-2ed90366e258",
+      "name": "Agent-Reach Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1328,
+        560
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "pZAg4cuv7VJGkpz8",
+          "name": "Bearer Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $json || {};\nconst ctx = $('Loop Over Posts').item.json;\nconst nm = (r.name || '').toString().toLowerCase().trim();\nlet research_status = r.research_status || 'research_failed';\nlet confidence = typeof r.confidence === 'number' ? r.confidence : (parseFloat(r.confidence) || 0);\nlet name = r.name || '';\nlet role = r.role || '';\nlet company = r.company || ctx.companyName || '';\nlet emails = Array.isArray(r.emails) ? r.emails : [];\nlet phones = Array.isArray(r.phone_numbers) ? r.phone_numbers : [];\nlet linkedin_url = r.linkedin_url || ctx.postAuthorProfileUrl || '';\nconst contaminated = nm.includes('join linkedin') || nm.includes('sign up') || nm.includes('log in') || nm.includes('login') || nm === 'linkedin';\nif (contaminated) { research_status = 'linkedin_profile_inaccessible'; confidence = 0; name = ''; role = ''; emails = []; phones = []; }\nemails = emails.filter(e => typeof e === 'string' && e.includes('@'));\nphones = phones.filter(p => p != null && String(p).trim() !== '');\nif (emails.length === 0 && Array.isArray(ctx.emails)) { emails = ctx.emails.filter(e => typeof e === 'string' && e.includes('@')); }\nif (phones.length === 0 && Array.isArray(ctx.phoneNumbers)) { phones = ctx.phoneNumbers.filter(p => p != null && String(p).trim() !== ''); }\nconst lead = {\n  source: 'linkedin',\n  rawQuery: ctx.rawQuery || '',\n  post: { url: ctx.postUrl || '', content: ctx.postContent || '', publishedAt: ctx.postPublishedAt || '' },\n  poster: { name: name || ctx.postAuthorName || '', linkedinUrl: linkedin_url, profileStatus: ctx.posterProfileStatus || '' },\n  company: { name: company, linkedinUrl: ctx.companyUrl || '' },\n  contact: { emails: emails, phoneNumbers: phones },\n  research: { confidence: confidence, status: research_status, backend: r.backend_used || '', role: role },\n  post_url: ctx.postUrl || '',\n  poster_linkedin_url: linkedin_url,\n  poster_name: name || ctx.postAuthorName || '',\n  research_status: research_status,\n  match_score: ctx.matchScore || 0,\n  match_signals: Array.isArray(ctx.matchSignals) ? ctx.matchSignals : []\n};\nreturn [{ json: lead }];"
+      },
+      "id": "2d1ea37b-4279-4d2f-88a4-bef8bd0273c3",
+      "name": "Validate Research & Build Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        512
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "5acdd1c7-56bd-4bd4-aaaa-edd9ba12b1ff",
+      "name": "Collect Lead",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "217066e6-19c6-4d0d-b234-8a2db23d857a",
+      "name": "Loop Over Posts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -2032,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json || {};\nconst hasUrl = !!c.postAuthorProfileUrl;\nconst status = hasUrl ? 'poster_not_researched' : 'poster_profile_missing';\nreturn [{ json: {\n  source: 'linkedin',\n  rawQuery: c.rawQuery || '',\n  post: { url: c.postUrl || '', content: c.postContent || '', publishedAt: c.postPublishedAt || '' },\n  poster: { name: c.postAuthorName || '', linkedinUrl: c.postAuthorProfileUrl || '', profileStatus: c.posterProfileStatus || 'not_found' },\n  company: { name: c.companyName || '', linkedinUrl: c.companyUrl || '' },\n  contact: { emails: Array.isArray(c.emails) ? c.emails : [], phoneNumbers: Array.isArray(c.phoneNumbers) ? c.phoneNumbers : [] },\n  research: { confidence: (typeof c.confidence === 'number' ? c.confidence : 0), status: status, backend: '', role: '' },\n  post_url: c.postUrl || '',\n  poster_linkedin_url: c.postAuthorProfileUrl || '',\n  poster_name: c.postAuthorName || '',\n  research_status: status,\n  match_score: c.matchScore || 0,\n  match_signals: Array.isArray(c.matchSignals) ? c.matchSignals : []\n} }];"
+      },
+      "id": "02360937-645f-41a8-bf63-a3d3d347cb13",
+      "name": "Build Failed Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1216,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "start-scraper",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "a363d34b-1b2c-41b1-a575-698a8ff68f9b",
+      "name": "Run Scraper Webhook (Direct)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3456,
+        912
+      ],
+      "webhookId": "625016be-be8c-42b3-8056-1b23f0f7cacc",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tHEannrQe9XVTJJC",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten the webhook body so downstream nodes read the same fields as the form/execute triggers.\nconst body = ($json.body && typeof $json.body === 'object') ? $json.body : ($json || {});\nconst str = (v) => (v === undefined || v === null) ? '' : String(v).trim();\nreturn [{ json: {\n  searchQuery: str(body.searchQuery),\n  datePosted: str(body.datePosted),\n  location: str(body.location),\n  maxPosts: body.maxPosts\n} }];"
+      },
+      "id": "853f53ff-6277-445e-987f-29dddba97d09",
+      "name": "Normalize Webhook Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3200,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "job_title",
+              "fieldValue": "={{ $json[\"Job Title\"] }}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{ $json.Company }}"
+            },
+            {
+              "fieldId": "post_url",
+              "fieldValue": "={{ $json['Post URL'] }}"
+            },
+            {
+              "fieldId": "job_description",
+              "fieldValue": "={{ $json['Job Description'] }}"
+            },
+            {
+              "fieldId": "poster_name",
+              "fieldValue": "={{ $json['Poster Name'] }}"
+            },
+            {
+              "fieldId": "poster_profile_url",
+              "fieldValue": "={{ $json['Poster LinkedIn URL'] }}"
+            },
+            {
+              "fieldId": "post_content",
+              "fieldValue": "={{ $json['Post Content'] }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.Emails }}"
+            },
+            {
+              "fieldId": "poster_title",
+              "fieldValue": "={{ $json[\"Person Role\"] }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        304
+      ],
+      "id": "0265ff4e-cdc5-4ecc-b6de-f70603a4892d",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s1QCCUvy9fQ7mKKJ",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Generate Post Search Query": {
+      "main": [
+        [
+          {
+            "node": "new actor scraper 5$",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "new actor scraper 5$": {
+      "main": [
+        [
+          {
+            "node": "Filter Relevant Hiring 5$",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Relevant Hiring 5$": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate Leads": {
+      "main": [
+        [
+          {
+            "node": "Final Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Leads": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sheet Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sheet Rows": {
+      "main": [
+        [
+          {
+            "node": "Extract Fields From Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Fields From Post": {
+      "main": [
+        [
+          {
+            "node": "Merge Extracted Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Fields From Post",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Extracted Fields": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Leads to Google Sheets": {
+      "main": [
+        []
+      ]
+    },
+    "Is Poster Valid?": {
+      "main": [
+        [
+          {
+            "node": "Agent-Reach Research",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Failed Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent-Reach Research": {
+      "main": [
+        [
+          {
+            "node": "Validate Research & Build Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Research & Build Lead": {
+      "main": [
+        [
+          {
+            "node": "Collect Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Lead": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Posts": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Poster Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Failed Record": {
+      "main": [
+        [
+          {
+            "node": "Collect Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Scraper Webhook (Direct)": {
+      "main": [
+        [
+          {
+            "node": "Normalize Webhook Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Webhook Input": {
+      "main": [
+        [
+          {
+            "node": "Generate Post Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Respond Scraper (Direct)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dce5a8ae-7bb9-4d16-85ee-7401d5872f32",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a745ca5a82ed58ce0065b06200eb32d64db446c359b894bc040b775e9becf381"
+  },
+  "nodeGroups": [],
+  "id": "kNw4MhsudhdZwe52",
+  "tags": []
+}

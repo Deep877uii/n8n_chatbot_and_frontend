@@ -1,0 +1,1148 @@
+{
+  "name": "Lead Outreach API (Leads / Generate / Send)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "run-scraper",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "807121b1-2d63-4924-b620-beb42dee2ed4",
+      "name": "Run Scraper Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -784,
+        80
+      ],
+      "webhookId": "bb8347e3-0590-4ed0-9880-0bf92be5f800",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tHEannrQe9XVTJJC",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize the optional config coming from the frontend.\nconst body = ($json.body && typeof $json.body === 'object') ? $json.body : ($json || {});\nconst str = (v) => (v === undefined || v === null) ? '' : String(v).trim();\nconst num = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };\nreturn [{ json: {\n  searchQuery: str(body.searchQuery),\n  datePosted: str(body.datePosted),\n  location: str(body.location),\n  maxPosts: num(body.maxPosts),\n} }];"
+      },
+      "id": "1295c5b4-ac73-43cd-b613-3f94ff882137",
+      "name": "Prepare Scraper Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "kNw4MhsudhdZwe52",
+          "mode": "id",
+          "cachedResultUrl": "/workflow/kNw4MhsudhdZwe52"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "searchQuery": "={{ $json.searchQuery }}",
+            "datePosted": "={{ $json.datePosted }}",
+            "location": "={{ $json.location }}",
+            "maxPosts": "={{ $json.maxPosts }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "searchQuery",
+              "displayName": "searchQuery",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "datePosted",
+              "displayName": "datePosted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "maxPosts",
+              "displayName": "maxPosts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "e0bd9e23-cfd7-4700-ad0c-837b85e72866",
+      "name": "Execute 5$ Workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -336,
+        80
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n        success: true,\n        message: 'Lead scraping completed successfully.',\n        leadsProcessed: $('Execute 5$ Workflow').all().length\n      }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "12ecce22-add9-4f55-841d-540b49f272d4",
+      "name": "Respond Scraper",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -112,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: \"Failed to scrape leads. Please try again later.\" }) }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5c863872-c152-4484-a803-8818f31fb289",
+      "name": "Respond Scraper Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -112,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "path": "leads",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "4700a542-5871-4e36-a77b-8603283e32a2",
+      "name": "GET Leads Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2384,
+        960
+      ],
+      "webhookId": "8e224c31-9fc7-4445-85ac-95a75f86cb37",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tHEannrQe9XVTJJC",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "1hetnFGr9qj_yl8OxIYhVLrSZsoPh9B4S7TBpoT1eeUw"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sheet2"
+        },
+        "options": {}
+      },
+      "id": "df2fd8c9-60da-4d26-9491-9356296c8c69",
+      "name": "Read Leads Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2128,
+        960
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1c7MJCNUpHCqcvsy",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: \"Failed to load leads. Please try again later.\" }) }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d0dcd136-2ce5-40a2-9cee-acb8ce52534c",
+      "name": "Respond Leads Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1584,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map Supabase leads to the frontend-friendly shape.\n// Supabase uses snake_case column names.\n// Missing/null values become \"\" except email, which becomes null.\n\nconst rows = $input.all().filter(\n  i => i.json && Object.keys(i.json).length > 0\n);\n\nconst str = (v) => {\n  if (v === undefined || v === null) return '';\n  return String(v).trim();\n};\n\nconst data = [];\n\nfor (const it of rows) {\n  const r = it.json || {};\n\n  const postUrl = str(r.post_url);\n\n  // Use Supabase ID as the lead ID.\n  const leadId = r.id != null\n    ? String(r.id)\n    : postUrl || str(r.poster_profile_url) || `lead-${data.length + 1}`;\n\n  data.push({\n    leadId,\n\n    name: str(r.poster_name),\n\n    company: str(r.company),\n\n    role: str(r.poster_title),\n\n    email: r.email == null || str(r.email) === ''\n      ? null\n      : str(r.email),\n\n    linkedinUrl: str(r.poster_profile_url),\n\n    postUrl,\n\n    postContent: str(r.post_content),\n\n    // We removed Posted At, so don't use it.\n    // date_added is Supabase's automatic creation timestamp.\n    postedAt: r.date_added\n      ? str(r.date_added)\n      : '',\n\n    location: str(r.job_location),\n\n    companyWebsite: str(r.company_url),\n\n    jobTitle: str(r.job_title),\n\n    source: 'LinkedIn',\n  });\n}\n\nreturn [\n  {\n    json: {\n      success: true,\n      data\n    }\n  }\n];"
+      },
+      "id": "c2312f12-83df-46da-a98d-c54921293616",
+      "name": "Map Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1568,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "daa86a1e-7704-4e97-8fff-1d9aa6e30243",
+      "name": "Respond Leads",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1360,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize + validate the incoming lead payload.\nconst body = ($json.body && typeof $json.body === 'object') ? $json.body : ($json || {});\nconst str = (v) => (v === undefined || v === null) ? '' : String(v).trim();\nconst lead = {\n  leadId: str(body.leadId),\n  name: str(body.name),\n  company: str(body.company),\n  role: str(body.role),\n  email: str(body.email),\n  linkedinUrl: str(body.linkedinUrl),\n  postUrl: str(body.postUrl),\n  postContent: str(body.postContent),\n  jobTitle: str(body.jobTitle),\n  location: str(body.location),\n};\nlet _valid = true;\nlet _error = '';\nif (!lead.leadId) { _valid = false; _error = 'leadId is required.'; }\nelse if (!lead.name && !lead.company && !lead.postContent) {\n  _valid = false; _error = 'At least one of name, company or postContent is required to generate an email.';\n}\nreturn [{ json: { ...lead, _valid, _error } }];"
+      },
+      "id": "11fc5af9-bda9-4d96-b07a-ffc6d5514475",
+      "name": "Validate Generate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "gen-valid",
+              "leftValue": "={{ $json._valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "82ce8820-1e00-470a-82c3-33a7c5c6a30e",
+      "name": "Is Generate Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an outreach email personalization agent for Alvion Technologies.\n\nRead ONLY the CURRENT LinkedIn post data and create a personalized email to the person who posted the hiring requirement.\n\nYour goal is to keep the standard Alvion sales message consistent while personalizing it based on the actual post.\n\nINPUT FIELDS:\n\n* Job Title: {{ $json.jobTitle }}\n* Company: {{ $json.company }}\n* Poster Name: {{ $json.name }}\n* Post Content: {{ $json.postContent }}\n* Email:{{ $json.email }}\n\nRULES:\n\n1. Read the post and identify the actual hiring requirement.\n2. Start by naturally referring to their specific hiring post.\n3. Use the recipient's first name when available.\n4. Mention the relevant job/technology from the post.\n5. Keep the core Alvion message and benefits consistent.\n6. Adapt the resource/technology sentence to the requirement when relevant.\n7. Mention C2C/contract/remote/etc. only if present in the post.\n8. Do NOT invent candidates, skills, companies, experience, availability, or other information.\n9. Do NOT mention unrelated technologies.\n10. Do NOT copy the job description.\n11. Make the email sound personally written, not automated.\n12. Keep it concise and professional.\n13. Mention the resource PDF only if it is actually attached.\n\nCORE ALVION MESSAGE:\n\nI'm Yogita Gyanani from Alvion Technologies. We currently have a strong bench of experienced technology professionals available for immediate deployment on a contract basis across Appian, React, Java, Python, Android, Full Stack, and other emerging technologies.\n\nOur resources can help your team:\n• Accelerate onboarding without long hiring cycles\n• Reduce hiring and operational overhead\n• Scale engineering teams based on project requirements\n• Access experienced, project-ready professionals from Day 1\n\nEnd with a polite invitation for a quick 20-minute discussion about their current or upcoming hiring needs.\n\nIf information is missing, omit it. NEVER guess.\n\nOUTPUT ONLY VALID JSON:\n\n{\n\"recipientName\": \"first name or null\",\n\"recipientEmail\": \"email or null\",\n\"subject\": \"personalized subject\",\n\"body\": \"complete email\"\n}\n",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "id": "43d86e33-6a6d-46c5-bb85-5f0bd100e35b",
+      "name": "Email Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -112,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3-super-120b-a12b:free",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "id": "6c88ab97-8661-4978-a516-0315871f3b6b",
+      "name": "Email Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        1040
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "UdZZtV3C7qy9tYJk",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": {
+          "subject": "Quick note about your Python backend hiring",
+          "body": "Hi John,\n\nI saw your post about hiring a Python backend engineer...",
+          "recipient": "john@example.com",
+          "leadId": "https://linkedin.com/posts/example"
+        }
+      },
+      "id": "b6c7c64a-5a0a-4225-b984-c309f2f92af4",
+      "name": "Email Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        1040
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b3a162d2-229e-450c-a79f-0cade66ec067",
+      "name": "Respond Generate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        432,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: $json._error }) }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "130a4cd0-21ef-4fdf-97be-85996b889b7b",
+      "name": "Respond Generate Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -48,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-email",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "20773236-3d3e-44c4-8cc0-bf560c7cdc99",
+      "name": "Send Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1008,
+        1072
+      ],
+      "webhookId": "93e036d5-3e4c-4c5c-be02-40bb880c25e0",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tHEannrQe9XVTJJC",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize + validate the outgoing email payload before sending.\nconst body = ($json.body && typeof $json.body === 'object') ? $json.body : ($json || {});\nconst str = (v) => (v === undefined || v === null) ? '' : String(v).trim();\n\nconst leadId = str(body.leadId);\nconst recipient = str(body.recipient);\nconst subject = str(body.subject);\nconst emailBody = str(body.body);\nconst attachments = Array.isArray(body.attachments) ? body.attachments : [];\n\nconst emailRe = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nlet _valid = true;\nlet _error = '';\n\nif (!leadId) { _valid = false; _error = 'leadId is required.'; }\nelse if (!recipient) { _valid = false; _error = 'Recipient email is required.'; }\nelse if (!emailRe.test(recipient)) { _valid = false; _error = 'Recipient is not a valid email address.'; }\nelse if (!subject) { _valid = false; _error = 'Subject cannot be empty.'; }\nelse if (!emailBody) { _valid = false; _error = 'Email body cannot be empty.'; }\n\n// Build the return item\nconst item = {\n  json: {\n    leadId,\n    recipient,\n    subject,\n    body: emailBody,\n    _valid,\n    _error\n  }\n};\n\n// If attachments are provided, attach all of them\nif (_valid && attachments.length > 0) {\n  item.binary = {};\n  attachments.forEach((file, index) => {\n    if (file && file.base64) {\n      const base64Clean = file.base64.replace(/^data:.*?;base64,/, '');\n      const key = `attachment_${index + 1}`;\n      item.binary[key] = {\n        data: base64Clean,\n        mimeType: file.type || 'application/pdf',\n        fileName: file.name || `document_${index + 1}.pdf`,\n      };\n    }\n  });\n}\n\nreturn [item];\n"
+      },
+      "id": "8fcdfc5b-23f2-4377-a14f-f7e1b5d7aed5",
+      "name": "Validate Send Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "send-valid",
+              "leftValue": "={{ $json._valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5557b0fa-fc93-4284-83e6-26662d1a4f4f",
+      "name": "Is Send Input Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipient }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body.replace(/\\n/g, \"<br>\") }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{Object.keys($binary||{}).join(',')}}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "774f92c3-a5c5-46b1-af62-89feed296782",
+      "name": "Send Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1904,
+        960
+      ],
+      "webhookId": "63c859d9-f5e3-4754-b8f2-5c64504fe49d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "nvw9tHcLIuErW1rx",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n        success: true,\n        message: 'Email sent successfully',\n        recipient: $('Validate Send Input').item.json.recipient\n      }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ac92a607-479b-42a1-b71f-c2e146cc3da2",
+      "name": "Respond Send",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2128,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: \"Failed to send email. Please try again later.\" }) }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "65fc1b6f-5df6-4b17-9d27-f4f70b8ec16d",
+      "name": "Respond Gmail Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2128,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: $json._error }) }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-API-KEY"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6c1f7a47-c2cf-4ee8-b994-a44236af14a0",
+      "name": "Respond Send Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1904,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-email",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "7cc0761a-13d5-4ee5-ab03-d734165839c2",
+      "name": "Generate Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -864,
+        1024
+      ],
+      "webhookId": "b809f5ec-4cdc-4770-9ec2-64bbc4a30f4c",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tHEannrQe9XVTJJC",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = JSON.parse($json.output);\nconst input = $('Validate Generate Input').first().json;\n\nreturn [\n  {\n    json: {\n      success: true,\n      leadId: input.leadId,\n      recipient: email.recipientEmail || null,\n      subject: email.subject || \"\",\n      body: email.body || \"\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        864
+      ],
+      "id": "e08b172e-4e49-4f48-92a9-3af1380c8ef2",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "limit": 15,
+        "orderBy": "id.asc"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2128,
+        784
+      ],
+      "id": "218859dd-1868-4409-a098-f01ee4bf0d28",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s1QCCUvy9fQ7mKKJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reset-leads",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1264,
+        1360
+      ],
+      "id": "9b600669-cb27-4eb3-a913-78ee649010a1",
+      "name": "Webhook",
+      "webhookId": "623668dc-cb25-4f97-8a18-3ea91f2fed04"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "gte",
+              "keyValue": "0"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        1360
+      ],
+      "id": "4e67a3f0-c9f7-4b79-8079-f856f295b214",
+      "name": "Delete a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "s1QCCUvy9fQ7mKKJ",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"All leads deleted successfully\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -832,
+        1360
+      ],
+      "id": "c369f599-55c3-4e66-bcbe-32a37f742f47",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {
+    "Generate Email Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "deepashu.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+            "content-length": "2452",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-US,en;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "2405:201:3007:6029:98ae:109b:3c86:42b6",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "IN",
+            "cf-ray": "a2f30c0e78ad29b7-HYD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "origin": "http://localhost:5173",
+            "priority": "u=1, i",
+            "referer": "http://localhost:5173/",
+            "sec-ch-ua": "\"Not=A?Brand\";v=\"99\", \"Google Chrome\";v=\"151\", \"Chromium\";v=\"151\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-api-key": "e85dec84295eeb7445823c5462425156f2e182fb08e0914f4c57db11ce4f11cc",
+            "x-forwarded-for": "2405:201:3007:6029:98ae:109b:3c86:42b6, 172.70.192.160",
+            "x-forwarded-host": "deepashu.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-swc-46-7bf8fd779f-b7vr7",
+            "x-is-trusted": "yes",
+            "x-real-ip": "2405:201:3007:6029:98ae:109b:3c86:42b6"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "leadId": "https://www.linkedin.com/posts/mahaboob-m-821b63225_connections-electricalengineering-controlsengineering-activity-7496682473750450176-G3zB?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=ACoAAGzurdEB9ErDjm6KMhWBDFG3DLfi9j6s2OA",
+            "name": "Mahaboob M",
+            "company": "",
+            "role": "",
+            "email": "mahaboob.m@intellectt.com",
+            "linkedinUrl": "https://www.linkedin.com/in/mahaboob-m-821b63225?miniProfileUrn=urn%3Ali%3Afsd_profile%3AACoAADiXEtkBJx9GtmxTq0_HNcmTKSxos2Sr9uI",
+            "postUrl": "https://www.linkedin.com/posts/mahaboob-m-821b63225_connections-electricalengineering-controlsengineering-activity-7496682473750450176-G3zB?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=ACoAAGzurdEB9ErDjm6KMhWBDFG3DLfi9j6s2OA",
+            "postContent": "Hello #Connections,\nWe’re hiring talented Engineering Professionals for multiple opportunities across the U.S.\nJob Title: Electrical Design Engineer\nLocation: Pelzer, SC\nExperience: 5–10 Years\nSalary: $50–$55/hr on W2/C2C\nWork Type: Contract\nDomain: Electrical Engineering / Power Distribution\nIndustry: Data Centers / Power Modules / Electrical Systems\nJob Title: Controls Design Engineer\nLocation: Pelzer, SC\nExperience: 5–10 Years\nPay Ranga: $50-55/hr on W2/C2C\nWork Type: Contract\nDomain: Controls Engineering / FMS & BMS\nIndustry: Data Centers / Building Automation / Controls Engineering\nJob Title: DFT Engineer\nLocation: Santa Clara, CA\nExperience: 5-9 Years\nSalary Range: $100-110K annually\nWork Type: Full-Time (FTE)\nDomain: Semiconductor / VLSI / Design-for-Test (DFT)\nIndustry: Semiconductor / VLSI / Integrated Circuit (IC) Design & Manufacturing\nJob Title: API Backend Developer\nLocation: Remote\nExperience: 5–8 Years\nPay Range: $50/hr W2/C2C\nWork Type: Contract\nDomain: Backend Development / API / Cloud-Native Applications\nIndustry: Telecommunications / Networking / Software Engineering\nInterested candidates, please share your updated resume or connect with me directly.\nmahaboob.m@intellectt.com / 732-276-1830 \nTarunvenkat Paruchuri\nPoldas Ajay Bhanu\nGangadhar Reddy\n#ElectricalEngineering #ControlsEngineering #DFTEngineer #VLSI #Semiconductor #BackendDeveloper #Java #Python #Microservices #Kubernetes #DataCenters #Telecommunications #EngineeringJobs #TechJobs #Hiring #ContractJobs",
+            "jobTitle": "Electrical Design Engineer; Controls Design Engineer; DFT Engineer; API Backend Developer",
+            "location": "Pelzer, SC; Santa Clara, CA; Remote"
+          },
+          "webhookUrl": "https://deepashu.app.n8n.cloud/webhook/generate-email",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Run Scraper Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Scraper Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Scraper Input": {
+      "main": [
+        [
+          {
+            "node": "Execute 5$ Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute 5$ Workflow": {
+      "main": [
+        [
+          {
+            "node": "Respond Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Scraper Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Leads Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Leads Sheet": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Respond Leads Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Leads": {
+      "main": [
+        [
+          {
+            "node": "Respond Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Generate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Generate Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Generate Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Generate Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Send Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Send Input": {
+      "main": [
+        [
+          {
+            "node": "Is Send Input Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Send Input Valid?": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Send Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Gmail": {
+      "main": [
+        [
+          {
+            "node": "Respond Send",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Gmail Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Generate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Delete a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a row": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "Map Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "35e404d5-d0df-418f-b0e9-02895e1a24a4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a745ca5a82ed58ce0065b06200eb32d64db446c359b894bc040b775e9becf381"
+  },
+  "nodeGroups": [
+    {
+      "id": "b6989a14-7773-46a7-9642-21e2f619fab8",
+      "name": "Stage 0 — Run Scraper",
+      "nodeIds": [
+        "1295c5b4-ac73-43cd-b613-3f94ff882137",
+        "e0bd9e23-cfd7-4700-ad0c-837b85e72866",
+        "12ecce22-add9-4f55-841d-540b49f272d4",
+        "5c863872-c152-4484-a803-8818f31fb289"
+      ],
+      "description": "POST /run-scraper — triggers the existing 5$ workflow via Execute Workflow and waits for it to finish."
+    },
+    {
+      "id": "982a1936-ca71-4ac9-b073-0cf856646acd",
+      "name": "Stage 3 — Send Email",
+      "nodeIds": [
+        "8fcdfc5b-23f2-4377-a14f-f7e1b5d7aed5",
+        "5557b0fa-fc93-4284-83e6-26662d1a4f4f",
+        "774f92c3-a5c5-46b1-af62-89feed296782",
+        "ac92a607-479b-42a1-b71f-c2e146cc3da2",
+        "6c1f7a47-c2cf-4ee8-b994-a44236af14a0",
+        "65fc1b6f-5df6-4b17-9d27-f4f70b8ec16d"
+      ],
+      "description": "POST /send-email — validates the edited email and sends it via Gmail."
+    }
+  ],
+  "id": "nstB0AV1nizfhyto",
+  "tags": []
+}
